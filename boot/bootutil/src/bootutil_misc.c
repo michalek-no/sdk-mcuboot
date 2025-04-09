@@ -269,6 +269,8 @@ boot_read_swap_size(const struct flash_area *fap, uint32_t *swap_size)
 int
 boot_read_enc_key(const struct flash_area *fap, uint8_t slot, struct boot_status *bs)
 {
+        BOOT_LOG_ERR("-----------------");
+	printk("-------------\n");
     uint32_t off;
 #if MCUBOOT_SWAP_SAVE_ENCTLV
     uint32_t i;

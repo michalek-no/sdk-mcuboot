@@ -437,13 +437,13 @@ class Image:
             newpk = X25519PrivateKey.generate()
             shared = newpk.exchange(enckey._get_public())
         derived_key = HKDF(
-            algorithm=hashes.SHA256(), length=48, salt=None,
+            algorithm=hashes.SHA512(), length=32, salt=None,
             info=b'MCUBoot_ECIES_v1', backend=default_backend()).derive(shared)
         encryptor = Cipher(algorithms.AES(derived_key[:16]),
                            modes.CTR(bytes([0] * 16)),
                            backend=default_backend()).encryptor()
         cipherkey = encryptor.update(plainkey) + encryptor.finalize()
-        mac = hmac.HMAC(derived_key[16:], hashes.SHA256(),
+        mac = hmac.HMAC(derived_key[16:], hashes.SHA512(),
                         backend=default_backend())
         mac.update(cipherkey)
         ciphermac = mac.finalize()
@@ -679,6 +679,13 @@ class Image:
             elif isinstance(enckey, (ecdsa.ECDSA256P1Public,
                                      x25519.X25519Public)):
                 cipherkey, mac, pubk = self.ecies_hkdf(enckey, plainkey)
+                print("----------------------------")
+                print(len(pubk))
+                print(pubk.hex())
+                print(len(mac))
+                print(mac.hex())
+                print(len(cipherkey))
+                print(cipherkey.hex())
                 enctlv = pubk + mac + cipherkey
                 self.enctlv_len = len(enctlv)
                 if isinstance(enckey, ecdsa.ECDSA256P1Public):

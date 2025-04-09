@@ -822,6 +822,7 @@ static fih_ret
 boot_image_check(struct boot_loader_state *state, struct image_header *hdr,
                  const struct flash_area *fap, struct boot_status *bs)
 {
+        BOOT_LOG_ERR("-----image check");
     TARGET_STATIC uint8_t tmpbuf[BOOT_TMPBUF_SZ];
     int rc;
     FIH_DECLARE(fih_rc, FIH_FAILURE);
@@ -839,23 +840,29 @@ boot_image_check(struct boot_loader_state *state, struct image_header *hdr,
 #if defined(MCUBOOT_ENC_IMAGES) && !defined(MCUBOOT_RAM_LOAD)
     if (MUST_DECRYPT(fap, BOOT_CURR_IMG(state), hdr)) {
 #if defined(MCUBOOT_SWAP_USING_OFFSET) && defined(MCUBOOT_SERIAL_RECOVERY)
+        BOOT_LOG_ERR("-----SERIAL_RECOVERY");
         rc = boot_enc_load(state, 1, hdr, fap, bs, 0);
 #else
+        BOOT_LOG_ERR("-----! SERIAL_RECOVERY");
         rc = boot_enc_load(state, 1, hdr, fap, bs);
 #endif
         if (rc < 0) {
+        BOOT_LOG_ERR("-----boot_enc_load rc");
             FIH_RET(fih_rc);
         }
         if (rc == 0 && boot_enc_set_key(BOOT_CURR_ENC(state), 1, bs)) {
+        BOOT_LOG_ERR("-----boot_enc_set_key rc");
             FIH_RET(fih_rc);
         }
     }
 #endif
 
 #if defined(MCUBOOT_SWAP_USING_OFFSET) && defined(MCUBOOT_SERIAL_RECOVERY)
+        BOOT_LOG_ERR("----- util_img_validate SERIAL_RECOVERY");
     FIH_CALL(bootutil_img_validate, fih_rc, state, hdr, fap, tmpbuf, BOOT_TMPBUF_SZ,
              NULL, 0, NULL, 0);
 #else
+        BOOT_LOG_ERR("----- util_img_validate ! SERIAL_RECOVERY");
     FIH_CALL(bootutil_img_validate, fih_rc, state, hdr, fap, tmpbuf, BOOT_TMPBUF_SZ,
              NULL, 0, NULL);
 #endif
@@ -2060,6 +2067,7 @@ boot_swap_image(struct boot_loader_state *state, struct boot_status *bs)
     size = copy_size = 0;
     image_index = BOOT_CURR_IMG(state);
 
+printk("----swap\n");
     if (boot_status_is_reset(bs)) {
         /*
          * No swap ever happened, so need to find the largest image which
@@ -2396,6 +2404,7 @@ boot_prepare_image_for_update(struct boot_loader_state *state,
 {
     int rc;
     FIH_DECLARE(fih_rc, FIH_FAILURE);
+        BOOT_LOG_ERR("-----images prepare");
 
 #if defined(MCUBOOT_SERIAL_IMG_GRP_SLOT_INFO) || defined(MCUBOOT_DATA_SHARING)
     int max_size;
@@ -2510,6 +2519,7 @@ boot_prepare_image_for_update(struct boot_loader_state *state,
              * respectively be the headers of the new and previous active image. So NULL is provided
              * as boot status.
              */
+        BOOT_LOG_ERR("----- read headers");
             rc = boot_read_image_headers(state, false, NULL);
             assert(rc == 0);
 
@@ -2753,10 +2763,12 @@ context_boot_go(struct boot_loader_state *state, struct boot_rsp *rsp)
 #endif
 #endif
 
+        BOOT_LOG_ERR("-----1");
         /* Open primary and secondary image areas for the duration
          * of this call.
          */
         for (slot = 0; slot < BOOT_NUM_SLOTS; slot++) {
+        BOOT_LOG_ERR("-----for");
             fa_id = flash_area_id_from_multi_image_slot(image_index, slot);
             rc = flash_area_open(fa_id, &BOOT_IMG_AREA(state, slot));
             assert(rc == 0);
@@ -2778,6 +2790,7 @@ context_boot_go(struct boot_loader_state *state, struct boot_rsp *rsp)
         }
 #endif
 
+        BOOT_LOG_ERR("-----2");
         /* Determine swap type and complete swap if it has been aborted. */
         boot_prepare_image_for_update(state, &bs);
 
@@ -2791,6 +2804,7 @@ context_boot_go(struct boot_loader_state *state, struct boot_rsp *rsp)
 
 #if (BOOT_IMAGE_NUMBER > 1)
     if (has_upgrade) {
+        BOOT_LOG_ERR("-----upgraade");
         /* Iterate over all the images and verify whether the image dependencies
          * are all satisfied and update swap type if necessary.
          */
@@ -2817,6 +2831,7 @@ context_boot_go(struct boot_loader_state *state, struct boot_rsp *rsp)
      * all required update operations will have been finished.
      */
     IMAGES_ITER(BOOT_CURR_IMG(state)) {
+        BOOT_LOG_ERR("-----images iter");
 #if (BOOT_IMAGE_NUMBER > 1)
         if (state->img_mask[BOOT_CURR_IMG(state)]) {
             continue;
@@ -2856,6 +2871,7 @@ context_boot_go(struct boot_loader_state *state, struct boot_rsp *rsp)
                                 BOOT_IMG_AREA(state, BOOT_SECONDARY_SLOT));
             if (rc == BOOT_HOOK_REGULAR)
             {
+        BOOT_LOG_ERR("-----perform update");
                 rc = boot_perform_update(state, &bs);
             }
             assert(rc == 0);

@@ -63,7 +63,7 @@ _Static_assert(EC_CIPHERKEY_INDEX + BOOT_ENC_KEY_SIZE == EXPECTED_ENC_LEN,
 #    define EXPECTED_ENC_TLV    IMAGE_TLV_ENC_X25519
 #    define EC_PUBK_INDEX       (0)
 #    define EC_TAG_INDEX        (32)
-#    define EC_CIPHERKEY_INDEX  (32 + 32)
+#    define EC_CIPHERKEY_INDEX  (64 + 32)
 _Static_assert(EC_CIPHERKEY_INDEX + BOOT_ENC_KEY_SIZE == EXPECTED_ENC_LEN,
         "Please fix ECIES-X25519 component indexes");
 #endif
@@ -405,6 +405,7 @@ static int fake_rng(void *p_rng, unsigned char *output, size_t len)
 int
 boot_decrypt_key(const uint8_t *buf, uint8_t *enckey)
 {
+printk("------d\n");
 #if defined(MCUBOOT_ENCRYPT_RSA)
     bootutil_rsa_context rsa;
     uint8_t *cp;
@@ -614,6 +615,7 @@ boot_enc_load(struct boot_loader_state *state, int slot,
 #endif
              )
 {
+printk("------- boot_enc_load\n");
     struct enc_key_data *enc_state = BOOT_CURR_ENC(state);
     uint32_t off;
     uint16_t len;
@@ -627,6 +629,7 @@ boot_enc_load(struct boot_loader_state *state, int slot,
 
     /* Already loaded... */
     if (enc_state[slot].valid) {
+printk("------- already loaded\n");
         return 1;
     }
 
@@ -643,15 +646,18 @@ boot_enc_load(struct boot_loader_state *state, int slot,
 
     rc = bootutil_tlv_iter_begin(&it, hdr, fap, EXPECTED_ENC_TLV, false);
     if (rc) {
+printk("------- boot_enc_load iter begin\n");
         return -1;
     }
 
     rc = bootutil_tlv_iter_next(&it, &off, &len, NULL);
     if (rc != 0) {
+printk("------- boot_enc_load iter next\n");
         return rc;
     }
 
     if (len != EXPECTED_ENC_LEN) {
+printk("------- boot_enc_load enc len  %d %d\n", len, EXPECTED_ENC_LEN);
         return -1;
     }
 
@@ -662,9 +668,11 @@ boot_enc_load(struct boot_loader_state *state, int slot,
 
     rc = flash_area_read(fap, off, buf, EXPECTED_ENC_LEN);
     if (rc) {
+printk("------- boot_enc_load area read\n");
         return -1;
     }
 
+printk("------- boot_enc_load retrun \n");
     return boot_decrypt_key(buf, bs->enckey[slot]);
 }
 

@@ -31,7 +31,7 @@ BOOT_LOG_MODULE_DECLARE(mcuboot_psa_enc);
 #define EXPECTED_ENC_TLV    IMAGE_TLV_ENC_X25519
 #define EC_PUBK_INDEX       (0)
 #define EC_TAG_INDEX        (32)
-#define EC_CIPHERKEY_INDEX  (32 + 32)
+#define EC_CIPHERKEY_INDEX  (64 + 32)
 _Static_assert(EC_CIPHERKEY_INDEX + BOOT_ENC_KEY_SIZE == EXPECTED_ENC_LEN,
         "Please fix ECIES-X25519 component indexes");
 
@@ -113,6 +113,8 @@ extern const struct bootutil_key bootutil_enc_key;
 int
 boot_decrypt_key(const uint8_t *buf, uint8_t *enckey)
 {
+        BOOT_LOG_ERR("-------AES");
+printk("------aes\n");
     uint8_t derived_key[BOOTUTIL_CRYPTO_AES_CTR_KEY_SIZE + BOOTUTIL_CRYPTO_SHA256_DIGEST_SIZE];
     uint8_t *cp;
     uint8_t *cpend;
@@ -161,7 +163,7 @@ boot_decrypt_key(const uint8_t *buf, uint8_t *enckey)
         return -1;
     }
 
-    key_do_alg = PSA_ALG_KEY_AGREEMENT(PSA_ALG_ECDH, PSA_ALG_HKDF(PSA_ALG_SHA_256));
+    key_do_alg = PSA_ALG_KEY_AGREEMENT(PSA_ALG_ECDH, PSA_ALG_HKDF(PSA_ALG_SHA_512));
 
     psa_ret = psa_key_derivation_setup(&key_do, key_do_alg);
     if (psa_ret != PSA_SUCCESS) {
