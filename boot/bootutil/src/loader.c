@@ -1110,6 +1110,42 @@ static inline void sec_slot_cleanup_if_unusable(void)
 #endif /* defined(CONFIG_MCUBOOT_CLEANUP_UNUSABLE_SECONDARY) &&\
           defined(MCUBOOT_IS_SECOND_STAGE) || defined(CONFIG_SOC_NRF5340_CPUAPP) */
 
+#if defined(CONFIG_BOOT_OPTIONAL_IMAGES)
+/**
+ * Check whether an image may be invalid without blocking the boot.
+ *
+ * Image 0 is the image that MCUboot boots, so it is rejected here regardless of
+ * the configured mask.
+ *
+ * @param image_index Index of the image to check.
+ *
+ * @return true if the image is optional, false otherwise.
+ */
+static bool boot_image_is_optional(uint8_t image_index)
+{
+    if (image_index == 0) {
+        return false;
+    }
+
+    return (CONFIG_BOOT_OPTIONAL_IMAGES_MASK & (1UL << image_index)) != 0;
+}
+
+/**
+ * Report and scrub an optional image whose primary slot failed validation.
+ *
+ * @param state Bootloader state, with BOOT_CURR_IMG set to the failed image.
+ */
+static void boot_handle_invalid_optional_image(struct boot_loader_state *state)
+{
+    BOOT_LOG_ERR("Image %d in the primary slot is invalid; image is optional, continuing boot",
+                 BOOT_CURR_IMG(state));
+
+#if defined(CONFIG_BOOT_OPTIONAL_IMAGES_SCRUB)
+    boot_scrub_optional_image(state);
+#endif /* CONFIG_BOOT_OPTIONAL_IMAGES_SCRUB */
+}
+#endif /* CONFIG_BOOT_OPTIONAL_IMAGES */
+
 #ifdef CONFIG_MCUBOOT_UUID_CID
 /**
  * Read the image UUID from the TLV.
@@ -2690,6 +2726,17 @@ context_boot_go(struct boot_loader_state *state, struct boot_rsp *rsp)
             if (FIH_NOT_EQ(fih_rc, FIH_SUCCESS) ||
                 FIH_EQ(fih_rc, FIH_FAILURE) ||
                 FIH_EQ(fih_rc, FIH_NO_BOOTABLE_IMAGE)) {
+#if defined(CONFIG_BOOT_OPTIONAL_IMAGES)
+                if (boot_image_is_optional(BOOT_CURR_IMG(state))) {
+                    boot_handle_invalid_optional_image(state);
+                    /* The image is not booted and its data is not trusted, so
+                     * skip the rollback protection and shared data updates that
+                     * the rest of the iteration performs for a valid image.
+                     */
+                    ++fih_cnt;
+                    continue;
+                }
+#endif /* CONFIG_BOOT_OPTIONAL_IMAGES */
                 FIH_SET(fih_rc, FIH_FAILURE);
                 goto out;
             }
@@ -2703,6 +2750,13 @@ context_boot_go(struct boot_loader_state *state, struct boot_rsp *rsp)
             BOOT_LOG_ERR("Bad image magic 0x%lx; Image=%u", (unsigned long)
                          BOOT_IMG(state, BOOT_SLOT_PRIMARY).hdr.ih_magic,
                          BOOT_CURR_IMG(state));
+#if defined(CONFIG_BOOT_OPTIONAL_IMAGES)
+            if (boot_image_is_optional(BOOT_CURR_IMG(state))) {
+                boot_handle_invalid_optional_image(state);
+                ++fih_cnt;
+                continue;
+            }
+#endif /* CONFIG_BOOT_OPTIONAL_IMAGES */
             rc = BOOT_EBADIMAGE;
             FIH_SET(fih_rc, FIH_FAILURE);
             goto out;

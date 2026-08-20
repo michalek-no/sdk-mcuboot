@@ -505,6 +505,12 @@ boot_swap_type_multi(int image_index)
     int rc;
     size_t i;
 
+    if (FLASH_AREA_IMAGE_PRIMARY(image_index) ==
+        FLASH_AREA_IMAGE_SECONDARY(image_index)) {
+        BOOT_LOG_INF("Image index: %d, aliased slots; Swap type: none", image_index);
+        return BOOT_SWAP_TYPE_NONE;
+    }
+
 #ifdef CONFIG_NRF53_MULTI_IMAGE_UPDATE
     rc = BOOT_HOOK_CALL(boot_read_swap_state_primary_slot_hook,
                         BOOT_HOOK_REGULAR, image_index, &primary_slot);

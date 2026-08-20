@@ -127,6 +127,11 @@ zephyr_library_sources(
   ${BOOT_DIR}/bootutil/src/fault_injection_hardening.c
   )
 
+zephyr_library_sources_ifdef(
+  CONFIG_BOOT_OPTIONAL_IMAGES_SCRUB
+  ${BOOT_DIR}/bootutil/src/optional_image.c
+  )
+
 if((CONFIG_BOOT_ENCRYPT_X25519 AND CONFIG_BOOT_ED25519_PSA)
    OR (CONFIG_BOOT_ENCRYPT_EC256 AND CONFIG_BOOT_ECDSA_PSA)
    OR (CONFIG_BOOT_ENCRYPT_RSA AND CONFIG_BOOT_SIGNATURE_TYPE_RSA))

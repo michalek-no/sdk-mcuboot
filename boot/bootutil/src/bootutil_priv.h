@@ -570,6 +570,10 @@ uint32_t bootutil_max_image_size(struct boot_loader_state *state, const struct f
 int boot_read_image_size(struct boot_loader_state *state, int slot,
                          uint32_t *size);
 
+#if defined(CONFIG_BOOT_OPTIONAL_IMAGES_SCRUB)
+void boot_scrub_optional_image(struct boot_loader_state *state);
+#endif
+
 #ifdef __cplusplus
 }
 #endif

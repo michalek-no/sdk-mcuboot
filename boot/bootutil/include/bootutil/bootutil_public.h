@@ -159,6 +159,9 @@ struct boot_swap_state {
 /**
  * @brief Determines the action, if any, that mcuboot will take on a image pair.
  *
+ * Returns BOOT_SWAP_TYPE_NONE when the primary and secondary slots refer to
+ * the same flash area, because no swap can be performed.
+ *
  * @param image_index Image pair index.
  *
  * @return a BOOT_SWAP_TYPE_[...] constant on success, negative errno code on
